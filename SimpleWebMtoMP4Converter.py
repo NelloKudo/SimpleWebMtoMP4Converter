@@ -210,7 +210,7 @@ class ConverterGUI:
         # Enables abort conversion button
         self.abort_button.config(state="normal")
 
-        for input_file in self.input_files:            
+        for idx, input_file in enumerate(self.input_files):            
             
             # Changing currently converted file label
             self.update_label(input_file)
@@ -221,7 +221,7 @@ class ConverterGUI:
 
             # Creating output file
             output_file = os.path.join(self.output_dir, os.path.splitext(os.path.basename(input_file))[0] + ".mp4")
-            ffmpeg_cmd += ["-c:v", "libx264", "-preset", self.preset_var.get(), "-crf", str(self.quality_var.get()), "-c:a", "copy",  output_file]
+            ffmpeg_cmd += ["-c:v", "libx264", "-preset", self.preset_var.get(), "-crf", str(self.quality_var.get()), output_file]
 
             try:    
                 # Starting the FFmpeg process
@@ -267,7 +267,8 @@ class ConverterGUI:
                     self.progress_var.set(100)
 
                     # Show a message box when the conversion is complete 
-                    messagebox.showinfo("Conversion Complete", "Conversion completed successfully!")
+                    if idx == len(self.input_files) - 1:
+                        messagebox.showinfo("Conversion Complete", "Conversion completed successfully!")
 
             except subprocess.CalledProcessError as e:
                 
