@@ -2,6 +2,7 @@ import os
 import subprocess
 import platform
 import sys
+import wmi
 import signal
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -40,11 +41,14 @@ class ConverterGUI:
     def __init__(self, master):
 
         self.master = master
+        self.gpu_info = wmi.WMI()
         master.title("Simple WebM to MP4 Converter")
         
-        # This will be used to call the stop_conversion function
+        # This will be used to call the stop_conversion and gpu function
         self.process = None
         self.processstatus = True
+        self.gpu = "None"
+        self.errorlogs = 0
 
         # Saving OS information to make checks easier
         self.os_info = platform.system()
@@ -119,34 +123,57 @@ class ConverterGUI:
         self.quality_slider.bind("<Button-1>", self.update_quality_label)
         self.quality_slider.bind("<B1-Motion>",self.update_quality_label)
 
+        # Label to show resolution info
+        self.res_info = ttk.Label(master, text="Resolution:")
+        self.res_info.grid(row=4, column=0, columnspan=3, padx=(0, 140), pady=5)
+
+        # Label to set resolution
+        self.res_var = tk.StringVar(master)
+        self.res_dropdown = ttk.Combobox(master, width=20, textvariable=self.res_var)
+        self.res_dropdown['values'] = ("Default", "1920x1080", "1280x720", "640x480", "480x360", "Custom, write here.")
+        self.res_dropdown.current(0)
+        self.res_dropdown.grid(row=4, column=0, columnspan=3, padx=(120, 0), pady=5)
+
+        # Label to show encoding info
+        self.encoding_info = ttk.Label(master, text="   Encoding device: 🛈   ")
+        self.encoding_info.grid(row=5, column=0, columnspan=3, padx=(0, 180), pady=10)
+        self.encoding_tooltip = self.ToolTip(self.encoding_info, "Please set this to CPU in case converted \n files are not working properly.")
+
+        # Label to set encoding
+        self.encoding_var = tk.StringVar(master)
+        self.encoding_dropdown = ttk.Combobox(master, width=20, textvariable=self.encoding_var)
+        self.encoding_dropdown['values'] = ("Default (GPU/CPU)", "CPU")
+        self.encoding_dropdown.current(0)
+        self.encoding_dropdown.grid(row=5, column=0, columnspan=3, padx=(120, 0), pady=10)
+
         # Add a label to display the selected input files and output directory
         self.input_files_label = ttk.Label(master, text="No files selected.")
-        self.input_files_label.grid(row=4, column=0, columnspan=3, padx=10, pady=10)
+        self.input_files_label.grid(row=6, column=0, columnspan=3, padx=10, pady=10)
 
         # Add a label to display the selected output folder
         self.output_dir_label= ttk.Label(master, text=f"No output folder selected, using default: {os.getcwd()}")
-        self.output_dir_label.grid(row=5, column=0, columnspan=3, padx=10, pady=10)
+        self.output_dir_label.grid(row=7, column=0, columnspan=3, padx=10, pady=10)
         self.output_dir = os.getcwd()
 
         # Add a button to start the conversion process
         self.convert_button = ttk.Button(master, text="Convert", style='Accent.TButton', command=self.convert_files, state="disabled")
-        self.convert_button.grid(row=6, column=0, columnspan=3, padx=10, pady=10)
+        self.convert_button.grid(row=8, column=0, columnspan=3, padx=10, pady=10)
 
         # Add a button to abort conversion
         self.abort_button = ttk.Button(master, text="Abort conversion", style='Accent.TButton', command=self.stop_conversion, state="disabled")
-        self.abort_button.grid(row=7, column=1, columnspan=4, padx=90, pady=0)
+        self.abort_button.grid(row=9, column=1, columnspan=4, padx=90, pady=0)
 
         # Add a progress bar to show conversion progress
         self.progress_label = ttk.Label(master, text="Conversion Progress:")
-        self.progress_label.grid(row=7, column=0, padx=90, pady=10)
+        self.progress_label.grid(row=9, column=0, padx=90, pady=10)
 
         self.progress_var = tk.DoubleVar()
         self.progress = Progressbar(master, mode="determinate", variable=self.progress_var)
-        self.progress.grid(row=7, column=0, columnspan=3, padx=50, pady=10)
+        self.progress.grid(row=9, column=0, columnspan=3, padx=50, pady=10)
 
         # Add a label to display the currently converting file
         self.converting_label = ttk.Label(master, text="")
-        self.converting_label.grid(row=8, column=0, columnspan=3, padx=10, pady=10)
+        self.converting_label.grid(row=10, column=0, columnspan=3, padx=10, pady=10)
 
         # Call the update_label method every second
         self.master.after(1000, self.update_gui)
@@ -177,6 +204,30 @@ class ConverterGUI:
     def update_label(self, input):
         self.converting_label.config(text=f"Currently converting: {input}")
 
+    # Function to set main GPU 
+    def use_hw_accel(self):
+        
+        if self.os_info == "Windows":
+            # Retrieving GPU list on Windows
+            gpu_list=self.gpu_info.Win32_VideoController()
+            for gpu in gpu_list:
+                if "NVIDIA" in gpu.Name:
+                    self.gpu = "NVIDIA"
+                    break
+                elif "AMD" in gpu.Name:
+                    self.gpu = "AMD"
+                    break
+        else:
+            # Retrieving GPU list on Linux
+            try:
+                lspci_output = subprocess.check_output(["lspci", "-vnn"], stderr=subprocess.STDOUT)
+                lspci_output = lspci_output.decode("utf-8")
+                if "NVIDIA" in lspci_output:
+                    self.gpu = "NVIDIA"
+                elif "AMD" in lspci_output:
+                    self.gpu = "AMD"
+            except subprocess.CalledProcessError:
+                return
 
     # Function to stop conversion if wanted
     def stop_conversion(self):
@@ -201,6 +252,23 @@ class ConverterGUI:
         else:
             pass
 
+    # Function to check if the resolution is valid
+    def is_valid_resolution(self, res):
+        
+        res_list = res.split("x")
+        if len(res_list) != 2:
+            return False
+        
+        try:
+            t1 = int(res_list[0])
+            t2 = int(res_list[1])
+            if t1 < 0 or t2 < 0:
+                return False
+        except ValueError:
+            return False
+        
+        return True
+
     # Well...it converts file i guess?
     def convert_files(self):
 
@@ -209,6 +277,9 @@ class ConverterGUI:
 
         # Enables abort conversion button
         self.abort_button.config(state="normal")
+
+        # Get GPU information
+        self.use_hw_accel()
 
         for idx, input_file in enumerate(self.input_files):            
             
@@ -219,9 +290,26 @@ class ConverterGUI:
             ffmpeg_cmd = [self.ffmpeg_path, "-y"]
             ffmpeg_cmd += ["-i", input_file]
 
+            # Using encoder based on GPU/choice
+            if self.encoding_var.get() == "Default (GPU/CPU)":
+                if self.gpu == "NVIDIA":    
+                    ffmpeg_cmd += ["-c:v", "h264_nvenc"]
+                elif self.gpu == "AMD":
+                    ffmpeg_cmd += ["-c:v", "h264_amf"]
+                else:
+                    ffmpeg_cmd += ["-c:v", "libx264"]
+            else:
+                ffmpeg_cmd += ["-c:v", "libx264"]
+
+            # Set resolution according to GUI
+            if self.res_var.get():
+                resolution = self.res_var.get()
+                if resolution != "Default" or self.is_valid_resolution(resolution):
+                    ffmpeg_cmd += ["-s", self.res_var.get()]
+
             # Creating output file
             output_file = os.path.join(self.output_dir, os.path.splitext(os.path.basename(input_file))[0] + ".mp4")
-            ffmpeg_cmd += ["-c:v", "libx264", "-preset", self.preset_var.get(), "-crf", str(self.quality_var.get()), output_file]
+            ffmpeg_cmd += ["-preset", self.preset_var.get(), "-crf", str(self.quality_var.get()), output_file]
 
             try:    
                 # Starting the FFmpeg process
@@ -274,6 +362,8 @@ class ConverterGUI:
                 
                 # Updating label to display current converting file
                 messagebox.showerror("Error", f"Conversion failed: {e}")
+
+                # Upgrading error logs if related to GPU
 
             # Cleaning label
             self.converting_label.config(text=" " * len(input_file))
@@ -340,7 +430,7 @@ class ConverterGUI:
             self.output_dir_label.config(text=" " * len(self.output_dir_label.cget("text")))
             self.output_dir_label.config(text=f"Output folder: {self.output_dir} ✅")
             self.select_output_button.config(text=f"Select Output Folder ✅")
-            self.output_dir_label.grid(row=5, column=0, columnspan=3, padx=10, pady=10)
+            self.output_dir_label.grid(row=7, column=0, columnspan=3, padx=10, pady=10)
             self.convert_button.config(state="normal")
     
 
