@@ -293,13 +293,13 @@ class ConverterGUI:
             # Using encoder based on GPU/choice
             if self.encoding_var.get() == "Default (GPU/CPU)":
                 if self.gpu == "NVIDIA":    
-                    ffmpeg_cmd += ["-c:v", "h264_nvenc"]
+                    ffmpeg_cmd += ["-c:v", "h264_nvenc", "-cq", str(self.quality_var.get())]
                 elif self.gpu == "AMD":
-                    ffmpeg_cmd += ["-c:v", "h264_amf"]
+                    ffmpeg_cmd += ["-c:v", "h264_amf", "-qp", str(self.quality_var.get())]
                 else:
-                    ffmpeg_cmd += ["-c:v", "libx264"]
+                    ffmpeg_cmd += ["-c:v", "libx264", "-crf", str(self.quality_var.get())]
             else:
-                ffmpeg_cmd += ["-c:v", "libx264"]
+                ffmpeg_cmd += ["-c:v", "libx264", "-crf", str(self.quality_var.get())]
 
             # Set resolution according to GUI
             if self.res_var.get():
@@ -309,7 +309,7 @@ class ConverterGUI:
 
             # Creating output file
             output_file = os.path.join(self.output_dir, os.path.splitext(os.path.basename(input_file))[0] + ".mp4")
-            ffmpeg_cmd += ["-preset", self.preset_var.get(), "-crf", str(self.quality_var.get()), output_file]
+            ffmpeg_cmd += ["-preset", self.preset_var.get(), output_file]
 
             try:    
                 # Starting the FFmpeg process
