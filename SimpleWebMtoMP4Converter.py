@@ -2,7 +2,6 @@ import os
 import subprocess
 import platform
 import sys
-import wmi
 import signal
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -41,7 +40,6 @@ class ConverterGUI:
     def __init__(self, master):
 
         self.master = master
-        self.gpu_info = wmi.WMI()
         master.title("Simple WebM to MP4 Converter")
         
         # This will be used to call the stop_conversion and gpu function
@@ -57,6 +55,11 @@ class ConverterGUI:
         self.ffmpeg_path = ""
 
         if self.os_info == "Windows":
+            
+            # Getting GPU info using WMI
+            import wmi
+            self.gpu_info = wmi.WMI()
+
             # Get the path to the bundled ffmpeg binaries
             if hasattr(sys, '_MEIPASS'):
                 # PyInstaller creates a temporary folder to extract the bundled files
@@ -226,6 +229,7 @@ class ConverterGUI:
                     self.gpu = "NVIDIA"
                 elif "AMD" in lspci_output:
                     self.gpu = "AMD"
+                    print("lol")
             except subprocess.CalledProcessError:
                 return
 
@@ -294,7 +298,7 @@ class ConverterGUI:
             if self.encoding_var.get() == "Default (GPU/CPU)":
                 if self.gpu == "NVIDIA":    
                     ffmpeg_cmd += ["-c:v", "h264_nvenc", "-cq", str(self.quality_var.get())]
-                elif self.gpu == "AMD":
+                elif self.gpu == "AMD" and self.os_info == "Windows" :
                     ffmpeg_cmd += ["-c:v", "h264_amf", "-qp", str(self.quality_var.get())]
                 else:
                     ffmpeg_cmd += ["-c:v", "libx264", "-crf", str(self.quality_var.get())]

@@ -41,12 +41,13 @@ You can also set [CRF](https://superuser.com/questions/677576/what-is-crf-used-f
 
 # Installation
 
-_No need to install Python/ffmpeg_:
+## Windows
 
-Just **download the executable** for your OS from [Releases](https://github.com/NelloKudo/SimpleWebMtoMP4Converter/releases) and start converting 8)
+Windows users can just **download the zip file** from [here](https://github.com/NelloKudo/SimpleWebMtoMP4Converter/releases/download/v.1.2.0/SimpleWebMtoMP4ConverterPortable-win.zip) or the compressed [.exe file](https://github.com/NelloKudo/SimpleWebMtoMP4Converter/releases/download/v.1.2.0/SimpleWebMtoMP4Converter.exe) and start converting 8)
 
-(Note for Linux users: an install script is coming soon, just use the binaries for now)
+## Linux
 
+Linux users can instead use the `install.sh` script in the repo.
 
 # Compiling from source
 
