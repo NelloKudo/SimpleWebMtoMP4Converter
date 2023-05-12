@@ -8,9 +8,11 @@ Convert your WebM videos with ease.
 
 - [Features](#features)
 - [Installation](#installation)
-- [Compiling from source](#compiling-from-source)
     - [Windows](#windows)
-    - [Linux](#linux)
+    - [Linux](#windows)
+- [Compiling from source](#compiling-from-source)
+    - [Windows](#windows-1)
+    - [Linux](#linux-1)
 - [License](#license)
 
 
@@ -47,7 +49,17 @@ Windows users can just **download the zip file** from [here](https://github.com/
 
 ## Linux
 
-Linux users can instead use the `install.sh` script in the repo.
+Linux users can instead use the `install.sh` script in the repo (you need `wget`):
+
+```bash
+sh -c "$(wget -O- https://raw.githubusercontent.com/NelloKudo/SimpleWebMtoMP4Converter/main/install.sh)"
+
+## You can also reinstall with:
+sh -c "$(wget -O- https://raw.githubusercontent.com/NelloKudo/SimpleWebMtoMP4Converter/main/install.sh)" -- --reinstall
+
+## Or uninstall with:
+sh -c "$(wget -O- https://raw.githubusercontent.com/NelloKudo/SimpleWebMtoMP4Converter/main/install.sh)" -- --uninstall
+```
 
 # Compiling from source
 
